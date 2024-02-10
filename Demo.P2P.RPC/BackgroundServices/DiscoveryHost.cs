@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using System.Linq;
 using StreamJsonRpc;
 using System.Net.WebSockets;
+using System.Net.NetworkInformation;
 
 namespace Demo.P2P.RPC.BackgroundServices
 {
@@ -28,30 +29,41 @@ namespace Demo.P2P.RPC.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var discoveryPorts = _configuration.GetSection("DiscoveryPorts").GetChildren().Select(i => int.Parse(i.Value)).ToArray();
+            var discoveryPort = _configuration.GetValue<int>("DiscoveryPort");
             var serverPort = _configuration.GetValue<int>("ServerPort");
+            var localAddresses = GetAllLocalIPv4();
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                foreach (var discoveryPort in discoveryPorts)
+                try
                 {
-                    try
+                    using (var client = new UdpClient(discoveryPort))
                     {
-                        using (var server = new UdpClient(discoveryPort))
+                        client.EnableBroadcast = true;
+
+                        var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
+                        await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+
+
+                        var receiveData = await client.ReceiveAsync();
+                        var clientResponse = Encoding.ASCII.GetString(receiveData.Buffer);
+
+                        //_logger.LogInformation("Received {0} from {1}, sending response", clientResponse, receiveData.RemoteEndPoint.ToString());
+
+                        var parts = clientResponse.Split(":");
+                        var port = int.Parse(parts[1]);
+
+                        if (localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()))
                         {
-                            var receiveData = await server.ReceiveAsync();
+                            continue;
+                        }
 
-                            var clientResponse = Encoding.ASCII.GetString(receiveData.Buffer);
-
-                            _logger.LogInformation("Received {0} from {1}, sending response", clientResponse, receiveData.RemoteEndPoint.ToString());
-
-                            var parts = clientResponse.Split(":");
-                            var port = int.Parse(parts[1]);
-
-                            var nodeIdentifier = $"localhost:{port}";
-                            if (port > 0 && port != serverPort && ConnectedNodes.Nodes.ContainsKey(nodeIdentifier))
+                        var nodeIdentifier = $"{receiveData.RemoteEndPoint.Address}:{port}";
+                        if (port > 0 && !ConnectedNodes.Nodes.ContainsKey(nodeIdentifier))
+                        {
+                            using (var webSocket = new ClientWebSocket())
                             {
-                                using (var webSocket = new ClientWebSocket())
+                                try
                                 {
                                     await webSocket.ConnectAsync(new Uri($"ws://{nodeIdentifier}/json-rpc-auction"), CancellationToken.None);
 
@@ -61,17 +73,40 @@ namespace Demo.P2P.RPC.BackgroundServices
 
                                     _logger.LogInformation($"Should start ws connection to: {port}");
                                 }
+                                catch(Exception ex)
+                                {
+                                    _logger.LogError($"Could not connect to ws {nodeIdentifier}");
+                                }
                             }
-
-                            await Task.Delay(1000);
                         }
+
+                        await Task.Delay(1000);
                     }
-                    catch (Exception ex)
+                }
+                catch (Exception ex)
+                {
+                    // reading might fail
+                }
+            }
+        }
+
+        public static string[] GetAllLocalIPv4()
+        {
+            List<string> ipAddrList = new List<string>();
+            foreach (NetworkInterface item in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (item.OperationalStatus == OperationalStatus.Up)
+                {
+                    foreach (UnicastIPAddressInformation ip in item.GetIPProperties().UnicastAddresses)
                     {
-                        // reading might fail
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            ipAddrList.Add(ip.Address.ToString());
+                        }
                     }
                 }
             }
+            return ipAddrList.ToArray();
         }
     }
 }

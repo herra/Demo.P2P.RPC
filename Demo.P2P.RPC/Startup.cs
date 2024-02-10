@@ -14,7 +14,6 @@ namespace Demo.P2P.RPC
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddHostedService<DiscoveryClient>();
             services.AddHostedService<DiscoveryHost>();
 
             services.AddSingleton<IServiceProvider>(sp => sp);
