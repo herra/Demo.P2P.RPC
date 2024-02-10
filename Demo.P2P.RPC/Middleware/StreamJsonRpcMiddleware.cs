@@ -9,11 +9,8 @@ namespace Demo.P2P.RPC.Middleware
 {
     internal class StreamJsonRpcMiddleware
     {
-        private readonly IServiceProvider _serviceProvider;
-
-        public StreamJsonRpcMiddleware(RequestDelegate next, IServiceProvider serviceProvider)
+        public StreamJsonRpcMiddleware(RequestDelegate next)
         {
-            _serviceProvider = serviceProvider;
         }
 
         public async Task Invoke(HttpContext context)
@@ -23,8 +20,11 @@ namespace Demo.P2P.RPC.Middleware
                 var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
                 IJsonRpcMessageHandler jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
+                var nodeIdentifier = $"{context.Request.HttpContext.Connection.RemoteIpAddress}";
 
-                using (var jsonRpc = new JsonRpc(jsonRpcMessageHandler, _serviceProvider.GetRequiredService<IAuctionService>()))
+                var handler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
+
+                using (var jsonRpc = new JsonRpc(jsonRpcMessageHandler, handler))
                 {
                     jsonRpc.StartListening();
 

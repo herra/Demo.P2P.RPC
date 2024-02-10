@@ -53,7 +53,7 @@ namespace Demo.P2P.RPC.BackgroundServices
                         var parts = clientResponse.Split(":");
                         var port = int.Parse(parts[1]);
 
-                        if (localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()))
+                        if (localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()) && port == serverPort)
                         {
                             continue;
                         }

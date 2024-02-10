@@ -1,5 +1,6 @@
 using Demo.P2P.RPC.BackgroundServices;
 using Demo.P2P.RPC.Middleware;
+using Demo.P2P.RPC.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +16,8 @@ namespace Demo.P2P.RPC
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHostedService<DiscoveryHost>();
+
+            services.AddSingleton<IAuctionService, AuctionService>();
 
             services.AddSingleton<IServiceProvider>(sp => sp);
         }
