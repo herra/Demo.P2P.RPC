@@ -80,7 +80,7 @@ namespace Demo.P2P.RPC.BackgroundServices
                             }
                         }
 
-                        await Task.Delay(1000);
+                        await Task.Delay(5000);
                     }
                 }
                 catch (Exception ex)
