@@ -1,1 +1,1 @@
-# -Bitfinex.Test.Task
+# Bitfinex.Test.Task
