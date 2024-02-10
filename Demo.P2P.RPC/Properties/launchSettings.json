@@ -3,7 +3,7 @@
     "Demo.P2P.RPC": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://0.0.0.0:5001",
+      "applicationUrl": "https://localhost:5001",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

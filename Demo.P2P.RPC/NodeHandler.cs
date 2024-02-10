@@ -21,8 +21,6 @@ namespace Demo.P2P.RPC
             _webSocket = webSocket;
             _jsonRpcMessageHandler = jsonRpcMessageHandler;
             _auctionService = JsonRpc.Attach<IAuctionService>(jsonRpcMessageHandler);
-
-            ConnectedNodes.Nodes.TryAdd($"{nodeIdentifier}", this);
         }
 
         public Task CloseAuction(AuctionItem auctionItem, AuctionBid winningBid)
@@ -45,7 +43,8 @@ namespace Demo.P2P.RPC
             if (_webSocket != null)
             {
                 NodeHandler n;
-                while (!ConnectedNodes.Nodes.TryRemove(_nodeIdentifier, out n)) ;
+                ConnectedNodes.Nodes.TryRemove(_nodeIdentifier, out n);
+                ConnectedNodes.ClientNodes.TryRemove(_nodeIdentifier, out n);
                 _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client closing", CancellationToken.None);
                 _webSocket.Dispose();
                 // Expecting issues here

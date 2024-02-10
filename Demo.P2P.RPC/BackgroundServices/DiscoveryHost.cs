@@ -42,7 +42,8 @@ namespace Demo.P2P.RPC.BackgroundServices
                         client.EnableBroadcast = true;
 
                         var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
-                        await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+                        //await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+
 
 
                         var receiveData = await client.ReceiveAsync();
@@ -69,7 +70,8 @@ namespace Demo.P2P.RPC.BackgroundServices
 
                                     IJsonRpcMessageHandler jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
 
-                                    _ = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
+                                    var nodeHandler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
+                                    ConnectedNodes.Nodes.TryAdd($"{nodeIdentifier}", nodeHandler);
 
                                     _logger.LogInformation($"Should start ws connection to: {port}");
                                 }
