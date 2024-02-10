@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demo.P2P.RPC", "Demo.P2P.RPC\Demo.P2P.RPC.csproj", "{0899ABE3-3842-4C9E-B1D3-05862B8F7395}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Demo.P2P.RPC", "Demo.P2P.RPC\Demo.P2P.RPC.csproj", "{0899ABE3-3842-4C9E-B1D3-05862B8F7395}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demo.P2P.RPC.Services", "Demo.P2P.RPC.Services\Demo.P2P.RPC.Services.csproj", "{1A4D7AB5-BB81-4777-9D78-43A458192310}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{0899ABE3-3842-4C9E-B1D3-05862B8F7395}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0899ABE3-3842-4C9E-B1D3-05862B8F7395}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0899ABE3-3842-4C9E-B1D3-05862B8F7395}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A4D7AB5-BB81-4777-9D78-43A458192310}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A4D7AB5-BB81-4777-9D78-43A458192310}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A4D7AB5-BB81-4777-9D78-43A458192310}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A4D7AB5-BB81-4777-9D78-43A458192310}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
