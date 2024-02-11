@@ -98,7 +98,7 @@ namespace Demo.P2P.RPC.BackgroundServices
 
                 ConnectedNodes.Nodes.TryAdd($"{nodeIdentifier}", nodeHandler);
 
-                _logger.LogInformation($"Should start ws connection to: {port}");
+                _logger.LogInformation($"Now connected on ws to: {nodeIdentifier}");
             }
             catch (Exception ex)
             {
