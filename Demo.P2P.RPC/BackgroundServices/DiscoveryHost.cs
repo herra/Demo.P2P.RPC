@@ -70,13 +70,11 @@ namespace Demo.P2P.RPC.BackgroundServices
 
                         client.Close();
 
-                        if (localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()) && port == serverPort)
+                        if (!localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()) && port != serverPort)
                         {
-                            continue;
+                            var nodeIdentifier = $"{receiveData.RemoteEndPoint.Address}:{port}";
+                            await ConnectToNodeAsync(port, nodeIdentifier);
                         }
-
-                        var nodeIdentifier = $"{receiveData.RemoteEndPoint.Address}:{port}";
-                        await ConnectToNodeAsync(port, nodeIdentifier);
                     }
                 }
                 catch (Exception ex)
