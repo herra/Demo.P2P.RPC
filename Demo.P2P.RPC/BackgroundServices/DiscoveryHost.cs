@@ -39,10 +39,13 @@ namespace Demo.P2P.RPC.BackgroundServices
 
                 var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
                 await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+            }
 
-                while (!stoppingToken.IsCancellationRequested)
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
                 {
-                    try
+                    using (var client = new UdpClient(discoveryPort))
                     {
                         var receiveData = await client.ReceiveAsync();
                         var clientResponse = Encoding.ASCII.GetString(receiveData.Buffer);
@@ -61,12 +64,13 @@ namespace Demo.P2P.RPC.BackgroundServices
 
                         await ConnectToNodeAsync(port, nodeIdentifier);
 
-                        await Task.Delay(5000);
+                        client.Close();
                     }
-                    catch (Exception ex)
-                    {
-                        // reading might fail
-                    }
+                    await Task.Delay(5000);
+                }
+                catch (Exception ex)
+                {
+                    // reading might fail
                 }
             }
         }
