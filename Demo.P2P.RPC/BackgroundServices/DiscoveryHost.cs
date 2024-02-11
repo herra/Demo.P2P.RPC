@@ -41,7 +41,7 @@ namespace Demo.P2P.RPC.BackgroundServices
             var isNowOnlineIsSent = false;
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(5000);
+                await Task.Delay(2000);
 
                 try
                 {
@@ -49,16 +49,13 @@ namespace Demo.P2P.RPC.BackgroundServices
                     {
                         if (!isNowOnlineIsSent)
                         {
-                            
+                            client.EnableBroadcast = true;
+                            var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
+                            await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+                            client.Close();
+                            isNowOnlineIsSent = true;
                             continue;
                         }
-
-                        client.EnableBroadcast = true;
-
-                        var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
-                        await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
-                        client.Close();
-                        isNowOnlineIsSent = true;
 
                         await Task.Delay(1000);
 
@@ -80,6 +77,12 @@ namespace Demo.P2P.RPC.BackgroundServices
                             await ConnectToNodeAsync(port, nodeIdentifier);
                         }
                     }
+                }
+                catch (SocketException ex)
+                {
+                    var fixupPort = (serverPort == 5001 ? 6001 : 5001);
+                    var nodeIdentifier = $"localhost:{fixupPort}";
+                    await ConnectToNodeAsync(fixupPort, nodeIdentifier);
                 }
                 catch (Exception ex)
                 {
