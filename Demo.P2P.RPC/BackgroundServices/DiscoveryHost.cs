@@ -92,7 +92,7 @@ namespace Demo.P2P.RPC.BackgroundServices
             try
             {
                 var webSocket = new ClientWebSocket();
-                await webSocket.ConnectAsync(new Uri($"wss://{nodeIdentifier}/json-rpc-auction"), CancellationToken.None);
+                await webSocket.ConnectAsync(new Uri($"ws://{nodeIdentifier}/json-rpc-auction"), CancellationToken.None);
 
                 var nodeHandler = new NodeHandler(nodeIdentifier, webSocket);
 
