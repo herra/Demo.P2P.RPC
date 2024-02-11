@@ -33,23 +33,21 @@ namespace Demo.P2P.RPC.BackgroundServices
             var serverPort = _configuration.GetValue<int>("ServerPort");
             var localAddresses = GetAllLocalIPv4();
 
-            while (!stoppingToken.IsCancellationRequested)
+            using (var client = new UdpClient(discoveryPort))
             {
-                try
+                client.EnableBroadcast = true;
+
+                var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
+                await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    using (var client = new UdpClient(discoveryPort))
+                    try
                     {
-                        client.EnableBroadcast = true;
-
-                        var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
-                        //await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
-
-
-
                         var receiveData = await client.ReceiveAsync();
                         var clientResponse = Encoding.ASCII.GetString(receiveData.Buffer);
 
-                        //_logger.LogInformation("Received {0} from {1}, sending response", clientResponse, receiveData.RemoteEndPoint.ToString());
+                        _logger.LogInformation("Received {0} from {1}", clientResponse, receiveData.RemoteEndPoint.ToString());
 
                         var parts = clientResponse.Split(":");
                         var port = int.Parse(parts[1]);
@@ -60,39 +58,45 @@ namespace Demo.P2P.RPC.BackgroundServices
                         }
 
                         var nodeIdentifier = $"{receiveData.RemoteEndPoint.Address}:{port}";
-                        if (port > 0 && !ConnectedNodes.Nodes.ContainsKey(nodeIdentifier))
-                        {
-                            using (var webSocket = new ClientWebSocket())
-                            {
-                                try
-                                {
-                                    await webSocket.ConnectAsync(new Uri($"wss://{nodeIdentifier}/json-rpc-auction"), CancellationToken.None);
 
-                                    IJsonRpcMessageHandler jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
-
-                                    var nodeHandler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
-                                    ConnectedNodes.Nodes.TryAdd($"{nodeIdentifier}", nodeHandler);
-
-                                    _logger.LogInformation($"Should start ws connection to: {port}");
-                                }
-                                catch(Exception ex)
-                                {
-                                    _logger.LogError($"Could not connect to ws {nodeIdentifier}");
-                                }
-                            }
-                        }
+                        await ConnectToNodeAsync(port, nodeIdentifier);
 
                         await Task.Delay(5000);
                     }
-                }
-                catch (Exception ex)
-                {
-                    // reading might fail
+                    catch (Exception ex)
+                    {
+                        // reading might fail
+                    }
                 }
             }
         }
 
-        public static string[] GetAllLocalIPv4()
+        private async Task ConnectToNodeAsync(int port, string nodeIdentifier)
+        {
+            if (port <= 0 || ConnectedNodes.Nodes.ContainsKey(nodeIdentifier))
+            {
+                return;
+            }
+
+            try
+            {
+                var webSocket = new ClientWebSocket();
+                await webSocket.ConnectAsync(new Uri($"wss://{nodeIdentifier}/json-rpc-auction"), CancellationToken.None);
+
+                IJsonRpcMessageHandler jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
+
+                var nodeHandler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
+                ConnectedNodes.Nodes.TryAdd($"{nodeIdentifier}", nodeHandler);
+
+                _logger.LogInformation($"Should start ws connection to: {port}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Could not connect to ws {nodeIdentifier}");
+            }
+        }
+
+        private static string[] GetAllLocalIPv4()
         {
             List<string> ipAddrList = new List<string>();
             foreach (NetworkInterface item in NetworkInterface.GetAllNetworkInterfaces())
