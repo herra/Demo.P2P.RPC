@@ -39,6 +39,7 @@ namespace Demo.P2P.RPC.BackgroundServices
             var service = new ServiceProfile("x", ServiceName, (ushort)discoveryPort);
             service.AddProperty("ip", localAddresses.FirstOrDefault());
             service.AddProperty("port", serverPort.ToString());
+
             var sd = new ServiceDiscovery();
             sd.Advertise(service);
 
@@ -48,14 +49,35 @@ namespace Demo.P2P.RPC.BackgroundServices
         private async Task AttemptDiscoveryAsync(int discoveryPort, int serverPort, string[] localAddresses, CancellationToken stoppingToken)
         {
             var sd = new ServiceDiscovery();
-            sd.ServiceDiscovered += (s, serviceName) => 
+            var mdns = new MulticastService();
+
+            mdns.AnswerReceived += (s, e) =>
             {
-                _logger.LogInformation($"{s} {serviceName}");
-                if (serviceName == ServiceName)
+                var domainNamePointers = e.Message.Answers.OfType<PTRRecord>().ToList();
+                if (!domainNamePointers.Any() )
                 {
-                    
+                    return;
+                }
+
+                string ip = null;
+                string port = null;
+
+                var props = e.Message.AdditionalRecords.OfType<TXTRecord>().ToList();
+                foreach (var p in props)
+                {
+                    ip ??= p.Strings.FirstOrDefault(x => x.StartsWith("ip="));
+                    port ??= p.Strings.FirstOrDefault(x => x.StartsWith("port="));
+                }
+
+                if (!string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port))
+                {
+                    int portNum = int.Parse(port.Split("=").Last());
+                    string ipStr = ip.Split("=").Last();
+                    ConnectToNodeAsync(portNum, ipStr);
                 }
             };
+
+            mdns.Start();
             sd.QueryAllServices();
         }
 
