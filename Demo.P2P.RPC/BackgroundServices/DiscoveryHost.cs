@@ -33,21 +33,34 @@ namespace Demo.P2P.RPC.BackgroundServices
             var serverPort = _configuration.GetValue<int>("ServerPort");
             var localAddresses = GetAllLocalIPv4();
 
-            using (var client = new UdpClient(discoveryPort))
-            {
-                client.EnableBroadcast = true;
+            await AttemptDiscoveryAsync(discoveryPort, serverPort, localAddresses, stoppingToken);
+        }
 
-                var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
-                await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
-            }
-
+        private async Task AttemptDiscoveryAsync(int discoveryPort, int serverPort, string[] localAddresses, CancellationToken stoppingToken)
+        {
+            var isNowOnlineIsSent = false;
             while (!stoppingToken.IsCancellationRequested)
             {
+                await Task.Delay(5000);
+
                 try
                 {
                     using (var client = new UdpClient(discoveryPort))
                     {
-                        var receiveData = await client.ReceiveAsync();
+                        if (!isNowOnlineIsSent)
+                        {
+                            client.EnableBroadcast = true;
+
+                            var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
+                            await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+                            client.Close();
+                            isNowOnlineIsSent = true;
+                            continue;
+                        }
+
+                        CancellationTokenSource s_cts = new CancellationTokenSource();
+                        s_cts.CancelAfter(1000);
+                        var receiveData = await client.ReceiveAsync(s_cts.Token);
                         var clientResponse = Encoding.ASCII.GetString(receiveData.Buffer);
 
                         _logger.LogInformation("Received {0} from {1}", clientResponse, receiveData.RemoteEndPoint.ToString());
@@ -55,18 +68,16 @@ namespace Demo.P2P.RPC.BackgroundServices
                         var parts = clientResponse.Split(":");
                         var port = int.Parse(parts[1]);
 
+                        client.Close();
+
                         if (localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()) && port == serverPort)
                         {
                             continue;
                         }
 
                         var nodeIdentifier = $"{receiveData.RemoteEndPoint.Address}:{port}";
-
                         await ConnectToNodeAsync(port, nodeIdentifier);
-
-                        client.Close();
                     }
-                    await Task.Delay(5000);
                 }
                 catch (Exception ex)
                 {
