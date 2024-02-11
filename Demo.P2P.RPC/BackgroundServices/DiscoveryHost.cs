@@ -37,6 +37,8 @@ namespace Demo.P2P.RPC.BackgroundServices
 
             
             var service = new ServiceProfile("x", ServiceName, (ushort)discoveryPort);
+            service.AddProperty("ip", localAddresses.FirstOrDefault());
+            service.AddProperty("port", serverPort.ToString());
             var sd = new ServiceDiscovery();
             sd.Advertise(service);
 
@@ -54,6 +56,7 @@ namespace Demo.P2P.RPC.BackgroundServices
                     
                 }
             };
+            sd.QueryAllServices();
         }
 
         private async Task ConnectToNodeAsync(int port, string nodeIdentifier)
