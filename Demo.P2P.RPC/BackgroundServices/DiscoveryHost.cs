@@ -92,7 +92,7 @@ namespace Demo.P2P.RPC.BackgroundServices
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Could not connect to ws {nodeIdentifier}");
+                _logger.LogError(ex, $"Could not connect to ws {nodeIdentifier}");
             }
         }
 
