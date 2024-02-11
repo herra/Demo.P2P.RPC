@@ -69,7 +69,7 @@ namespace Demo.P2P.RPC.BackgroundServices
                     string ipStr = ip.Split("=").Last();
                     if (serverPort != portNum)
                     {
-                        ConnectToNodeAsync(portNum, ipStr);
+                        ConnectToNodeAsync(portNum, $"{ipStr}:{portNum}");
                     }
                 }
             };
