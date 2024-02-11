@@ -48,17 +48,11 @@ namespace Demo.P2P.RPC.BackgroundServices
 
         private async Task AttemptDiscoveryAsync(int discoveryPort, int serverPort, string[] localAddresses, CancellationToken stoppingToken)
         {
-            var sd = new ServiceDiscovery();
             var mdns = new MulticastService();
+            var sd = new ServiceDiscovery(mdns);
 
             mdns.AnswerReceived += (s, e) =>
             {
-                var domainNamePointers = e.Message.Answers.OfType<PTRRecord>().ToList();
-                if (!domainNamePointers.Any() )
-                {
-                    return;
-                }
-
                 string ip = null;
                 string port = null;
 
@@ -73,12 +67,15 @@ namespace Demo.P2P.RPC.BackgroundServices
                 {
                     int portNum = int.Parse(port.Split("=").Last());
                     string ipStr = ip.Split("=").Last();
-                    ConnectToNodeAsync(portNum, ipStr);
+                    if (serverPort != portNum)
+                    {
+                        ConnectToNodeAsync(portNum, ipStr);
+                    }
                 }
             };
 
             mdns.Start();
-            sd.QueryAllServices();
+            sd.QueryServiceInstances(new DomainName(ServiceName));
         }
 
         private async Task ConnectToNodeAsync(int port, string nodeIdentifier)
