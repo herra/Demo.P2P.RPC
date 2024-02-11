@@ -25,12 +25,12 @@ namespace Demo.P2P.RPC.Middleware
                 var handler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
                 ConnectedNodes.ClientNodes.TryAdd(nodeIdentifier, handler);
 
-                using (var jsonRpc = new JsonRpc(jsonRpcMessageHandler, handler))
-                {
-                    jsonRpc.StartListening();
+                //using (var jsonRpc = new JsonRpc(jsonRpcMessageHandler, handler))
+                //{
+                //    jsonRpc.StartListening();
 
-                    await jsonRpc.Completion;
-                }
+                //    await jsonRpc.Completion;
+                //}
             }
             else
             {

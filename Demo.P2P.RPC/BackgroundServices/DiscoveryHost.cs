@@ -13,11 +13,13 @@ using System.Linq;
 using StreamJsonRpc;
 using System.Net.WebSockets;
 using System.Net.NetworkInformation;
+using Makaretu.Dns;
 
 namespace Demo.P2P.RPC.BackgroundServices
 {
     public class DiscoveryHost : BackgroundService
     {
+        const string ServiceName = "p2p.rpc";
         private readonly IConfiguration _configuration;
         private readonly ILogger<DiscoveryHost> _logger;
 
@@ -33,62 +35,25 @@ namespace Demo.P2P.RPC.BackgroundServices
             var serverPort = _configuration.GetValue<int>("ServerPort");
             var localAddresses = GetAllLocalIPv4();
 
+            
+            var service = new ServiceProfile("x", ServiceName, (ushort)discoveryPort);
+            var sd = new ServiceDiscovery();
+            sd.Advertise(service);
+
             await AttemptDiscoveryAsync(discoveryPort, serverPort, localAddresses, stoppingToken);
         }
 
         private async Task AttemptDiscoveryAsync(int discoveryPort, int serverPort, string[] localAddresses, CancellationToken stoppingToken)
         {
-            var isNowOnlineIsSent = false;
-            while (!stoppingToken.IsCancellationRequested)
+            var sd = new ServiceDiscovery();
+            sd.ServiceDiscovered += (s, serviceName) => 
             {
-                await Task.Delay(2000);
-
-                try
+                _logger.LogInformation($"{s} {serviceName}");
+                if (serviceName == ServiceName)
                 {
-                    using (var client = new UdpClient(discoveryPort))
-                    {
-                        if (!isNowOnlineIsSent)
-                        {
-                            client.EnableBroadcast = true;
-                            var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
-                            await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
-                            client.Close();
-                            isNowOnlineIsSent = true;
-                            continue;
-                        }
-
-                        await Task.Delay(1000);
-
-                        CancellationTokenSource s_cts = new CancellationTokenSource();
-                        s_cts.CancelAfter(1000);
-                        var receiveData = await client.ReceiveAsync(s_cts.Token);
-                        var clientResponse = Encoding.ASCII.GetString(receiveData.Buffer);
-
-                        _logger.LogInformation("Received {0} from {1}", clientResponse, receiveData.RemoteEndPoint.ToString());
-
-                        var parts = clientResponse.Split(":");
-                        var port = int.Parse(parts[1]);
-
-                        client.Close();
-
-                        if (!localAddresses.Contains(receiveData.RemoteEndPoint.Address.ToString()) && port != serverPort)
-                        {
-                            var nodeIdentifier = $"{receiveData.RemoteEndPoint.Address}:{port}";
-                            await ConnectToNodeAsync(port, nodeIdentifier);
-                        }
-                    }
+                    
                 }
-                catch (SocketException ex)
-                {
-                    var fixupPort = (serverPort == 5001 ? 6001 : 5001);
-                    var nodeIdentifier = $"localhost:{fixupPort}";
-                    await ConnectToNodeAsync(fixupPort, nodeIdentifier);
-                }
-                catch (Exception ex)
-                {
-                    // reading might fail
-                }
-            }
+            };
         }
 
         private async Task ConnectToNodeAsync(int port, string nodeIdentifier)
