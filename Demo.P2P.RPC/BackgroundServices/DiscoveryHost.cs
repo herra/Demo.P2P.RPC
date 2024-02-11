@@ -49,14 +49,18 @@ namespace Demo.P2P.RPC.BackgroundServices
                     {
                         if (!isNowOnlineIsSent)
                         {
-                            client.EnableBroadcast = true;
-
-                            var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
-                            await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
-                            client.Close();
-                            isNowOnlineIsSent = true;
+                            
                             continue;
                         }
+
+                        client.EnableBroadcast = true;
+
+                        var requestData = Encoding.ASCII.GetBytes($"Listening on:{serverPort}");
+                        await client.SendAsync(requestData, requestData.Length, new IPEndPoint(IPAddress.Broadcast, discoveryPort));
+                        client.Close();
+                        isNowOnlineIsSent = true;
+
+                        await Task.Delay(1000);
 
                         CancellationTokenSource s_cts = new CancellationTokenSource();
                         s_cts.CancelAfter(1000);
