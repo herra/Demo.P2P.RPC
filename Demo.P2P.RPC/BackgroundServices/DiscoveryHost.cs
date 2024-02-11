@@ -37,7 +37,8 @@ namespace Demo.P2P.RPC.BackgroundServices
 
             
             var service = new ServiceProfile("x", ServiceName, (ushort)discoveryPort);
-            service.AddProperty("ip", localAddresses.FirstOrDefault());
+
+            service.AddProperty("ip", string.Join(";", localAddresses));
             service.AddProperty("port", serverPort.ToString());
 
             var sd = new ServiceDiscovery();
@@ -66,10 +67,13 @@ namespace Demo.P2P.RPC.BackgroundServices
                 if (!string.IsNullOrEmpty(ip) && !string.IsNullOrEmpty(port))
                 {
                     int portNum = int.Parse(port.Split("=").Last());
-                    string ipStr = ip.Split("=").Last();
+                    var ipStr = ip.Split("=").Last().Split(";");
                     if (serverPort != portNum)
                     {
-                        ConnectToNodeAsync(portNum, $"{ipStr}:{portNum}");
+                        foreach(var ipAdd in ipStr)
+                        {
+                            ConnectToNodeAsync(portNum, $"{ipAdd}:{portNum}");
+                        }
                     }
                 }
             };
@@ -90,9 +94,8 @@ namespace Demo.P2P.RPC.BackgroundServices
                 var webSocket = new ClientWebSocket();
                 await webSocket.ConnectAsync(new Uri($"wss://{nodeIdentifier}/json-rpc-auction"), CancellationToken.None);
 
-                IJsonRpcMessageHandler jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
+                var nodeHandler = new NodeHandler(nodeIdentifier, webSocket);
 
-                var nodeHandler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
                 ConnectedNodes.Nodes.TryAdd($"{nodeIdentifier}", nodeHandler);
 
                 _logger.LogInformation($"Should start ws connection to: {port}");

@@ -19,18 +19,17 @@ namespace Demo.P2P.RPC.Middleware
             {
                 var webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-                IJsonRpcMessageHandler jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
                 var nodeIdentifier = $"{context.Request.HttpContext.Connection.RemoteIpAddress}:{context.Request.HttpContext.Connection.RemotePort}";
 
-                var handler = new NodeHandler(nodeIdentifier, webSocket, jsonRpcMessageHandler);
+                var handler = new NodeHandler(nodeIdentifier, webSocket);
                 ConnectedNodes.ClientNodes.TryAdd(nodeIdentifier, handler);
 
-                //using (var jsonRpc = new JsonRpc(jsonRpcMessageHandler, handler))
-                //{
-                //    jsonRpc.StartListening();
+                using (var jsonRpc = new JsonRpc(handler._jsonRpcMessageHandler, handler))
+                {
+                    jsonRpc.StartListening();
 
-                //    await jsonRpc.Completion;
-                //}
+                    await jsonRpc.Completion;
+                }
             }
             else
             {

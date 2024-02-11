@@ -12,15 +12,16 @@ namespace Demo.P2P.RPC
     {
         private readonly string _nodeIdentifier;
         private readonly WebSocket _webSocket;
-        private readonly IJsonRpcMessageHandler _jsonRpcMessageHandler;
+        public readonly IJsonRpcMessageHandler _jsonRpcMessageHandler;
         private readonly IAuctionService _auctionService;
 
-        public NodeHandler(string nodeIdentifier, WebSocket webSocket, IJsonRpcMessageHandler jsonRpcMessageHandler)
+        public NodeHandler(string nodeIdentifier, WebSocket webSocket)
         {
             _nodeIdentifier = nodeIdentifier;
             _webSocket = webSocket;
-            _jsonRpcMessageHandler = jsonRpcMessageHandler;
-            _auctionService = JsonRpc.Attach<IAuctionService>(jsonRpcMessageHandler);
+
+            _jsonRpcMessageHandler = new WebSocketMessageHandler(webSocket);
+            _auctionService = JsonRpc.Attach<IAuctionService>(_jsonRpcMessageHandler);
         }
 
         public Task CloseAuction(AuctionItem auctionItem, AuctionBid winningBid)
